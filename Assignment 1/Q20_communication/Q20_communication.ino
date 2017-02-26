@@ -12,6 +12,23 @@ void setup(){
 
 void loop(){
   serialEvent();
+  readSlave();
+  writeSlave(String(analogRead(A3)), String(analogRead(A4)));
+  
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    //Serial.println("A");
+    char inChar = (char)Serial.read(); 
+    str += inChar;
+    if (inChar == '\n') {
+      stringComplete = true;
+    } 
+  }
+}
+
+void readSlave(){
   if (stringComplete){
     for(int i = 0; i < str.length(); i++){
       if(str[i] == 'a')
@@ -33,14 +50,8 @@ void loop(){
   Serial.println(bstr);
 }
 
-void serialEvent() {
-  while (Serial.available()) {
-    //Serial.println("A");
-    char inChar = (char)Serial.read(); 
-    str += inChar;
-    if (inChar == '\n') {
-      stringComplete = true;
-    } 
-  }
+void writeSlave(String pot, String ldr){
+  str = "a"+ ldr + "b" + pot + "c";
+  //Serial.write(str);
 }
 

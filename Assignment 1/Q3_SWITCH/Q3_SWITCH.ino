@@ -8,6 +8,6 @@ void setup(){
 
 void loop(){
   digitalWrite(led, LOW);
-  if(digitalRead(sth) == HIGH)
+  if(digitalRead(sth) == LOW)
     digitalWrite(led, HIGH);  
 }
