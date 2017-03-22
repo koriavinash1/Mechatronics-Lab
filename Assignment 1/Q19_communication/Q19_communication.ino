@@ -1,3 +1,4 @@
+#include <LiquidCrystal.h>
 String astr="",bstr="";
 
 int a = 0, b = 0, c = 0;
@@ -5,7 +6,9 @@ int a = 0, b = 0, c = 0;
 String str = "";
 boolean stringComplete = false; 
 
+LiquidCrystal lcd(2,3,4,8,12,13);
 void setup(){
+  lcd.begin(16, 2);
   Serial.begin(9600);
   str.reserve(200);
 }
@@ -31,6 +34,12 @@ void loop(){
   }
   Serial.print(astr + '\t');
   Serial.println(bstr);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(astr);
+  lcd.setCursor(0,1);
+  lcd.print(bstr);
+  exit;
 }
 
 void serialEvent() {
