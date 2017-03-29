@@ -2,14 +2,15 @@
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(2,3,4,8,12,13);
 Servo myservo;
-int whitepatch_pos = 130;
+int whitepatch_pos = 170;
 int LDR_whitepatch = 0;
-int red = 9, green = 10, blue = 11;
+int red = 11, green = 10, blue = 9;
 int LDR = A2;
 int val_intensity[] = {0,0,0,0,0,0,0,0,0,0,0,0};//0:red, 1:green, 2:blue
 int val_current[] = {0,0,0,0,0,0,0,0,0,0,0,0};//0:red, 1:green, 2:blue // PWM values...
 int Cstop = 8;
 int servo_position = whitepatch_pos;
+int base_servo = 6, top_servo = 5;
 
 void setup(){
   Serial.begin(9600);
@@ -18,18 +19,27 @@ void setup(){
   pinMode(blue, OUTPUT);
   pinMode(Cstop, INPUT_PULLUP);
   
-  myservo.attach(6);
+  myservo.attach(base_servo);
   myservo.write(whitepatch_pos);
+  delay(3000);
+  myservo.detach();
+  delay(500);
+  
   
   lcd.begin(16, 2);
   
   digitalWrite(red, HIGH);
   digitalWrite(green, HIGH);
   digitalWrite(blue, HIGH);
+  delay(1000);
   LDR_whitepatch = analogRead(A2);
   digitalWrite(red, LOW);
   digitalWrite(green, LOW);
   digitalWrite(blue, LOW);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("WPatch_LDR:"+String(LDR_whitepatch));
+  delay(1000);
   
 }
 
@@ -38,6 +48,8 @@ void loop(){
 //    Serial.print("AAAA");
 //    exit(0);
 //  }
+
+// Manual Calibrate......
 //  ManualCalibrate(red);
 //  delay(100);
 //  digitalWrite(red, LOW);
@@ -48,32 +60,109 @@ void loop(){
 //  delay(100);
 //   digitalWrite(blue, LOW);
 
-  servomotion();
+//Auto Calibrate...............
   AutoCalibrate(red);
-  delay(100);
   digitalWrite(red, LOW);
-  servomotion();
+  
   AutoCalibrate(green);
-  delay(100);
   digitalWrite(green, LOW);
-  servomotion();
+
   AutoCalibrate(blue);
-  delay(100);
   digitalWrite(blue, LOW);
+ 
+ 
+// Calibrate to max............. 
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("calib to max.....");
+  delay(2000);
   
+  int maxValue = find_max();
   
-  calibrateToMax(find_max(), red);
-  delay(100);
+  calibrateToMax(maxValue, red);
   digitalWrite(red, LOW);
-  calibrateToMax(find_max(), green);
-  delay(100);
-  digitalWrite(green, LOW);
-  calibrateToMax(find_max(), blue);
-  delay(100);
+  
+//  lcd.clear();
+//  lcd.setCursor(0,0);
+//  lcd.print("Done RED....");
+//  delay(2000); 
+
+  calibrateToMax(maxValue, blue);
   digitalWrite(blue, LOW);
+ 
+//  lcd.clear();
+//  lcd.setCursor(0,0);
+//  lcd.print("Done BLUE....");
+//  delay(2000); 
+  
+  calibrateToMax(maxValue, green);
+  digitalWrite(green, LOW);
+  
+// calibration done......
+  delay(5000);
+  
+//  lcd.clear();
+//  lcd.setCursor(0,0);
+//  lcd.print("Done GREEN....");
+//  delay(2000); 
+ 
+// find color....  
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("finding color.....");
+  delay(2000);
+  int color = 0;
+
+  myservo.attach(6);
+  servomotion();
+  myservo.detach();
+  color = find_color();
+  delay(100);
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  if(color == 11) lcd.print("Color = RED");
+  else if(color == 10) lcd.print("Color = GREEN");
+  else if(color == 9) lcd.print("Color = BLUE");
+  else lcd.print("Color = junk");
+  delay(2000); 
   
   
-  exit(0);  
+  myservo.attach(6);
+  servomotion();
+  myservo.detach();
+  color = find_color();
+  delay(100);
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  if(color == 11) lcd.print("Color = RED");
+  else if(color == 10) lcd.print("Color = GREEN");
+  else if(color == 9) lcd.print("Color = BLUE");
+  else lcd.print("Color = junk");
+  delay(2000);
+  
+  
+  myservo.attach(6);
+  servomotion();
+  myservo.detach();
+  color = find_color();
+  delay(100);
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  if(color == 11) lcd.print("Color = RED");
+  else if(color == 10) lcd.print("Color = GREEN");
+  else if(color == 9) lcd.print("Color = BLUE");
+  else lcd.print("Color = junk");
+  delay(2000);
+  
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Done..."); 
+  
+  exit(0);
 }
 
 void ManualCalibrate(int temp){    
@@ -88,13 +177,13 @@ void ManualCalibrate(int temp){
 
 void AutoCalibrate(int temp){
   analogWrite(temp, 255);   
-  delay(250);
+  delay(200);
   val_intensity[temp] = analogRead(LDR);
-  val_current[temp] = 100;
+  val_current[temp] = 255;
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("R:"+String(val_intensity[red])+"G:"+String(val_intensity[green])+"B:"+String(val_intensity[blue]));
-  delay(1000); 
+  delay(500); 
 }
 
 int find_max(){
@@ -105,26 +194,63 @@ int find_max(){
 
 void calibrateToMax(int max_val, int temp){
   int temp_thresh = 10;
+  
+//  lcd.clear();
+//  lcd.setCursor(0,0);
+//  lcd.print("temp..."+ String(temp));
+//  delay(2000); 
+//  
+//  lcd.clear();
+//  lcd.setCursor(0,0);
+//  lcd.print("max_val."+ String(max_val));
+//  delay(2000);
+  
   for(int i = 255; val_intensity[temp] <= (max_val - temp_thresh); i--){
     analogWrite(temp, i);
-    delay(50);
+    delay(100);
     val_intensity[temp] = analogRead(LDR);
-    delay(50);
     val_current[temp] = i;
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("R:"+String(val_intensity[red])+"G:"+String(val_intensity[green])+"B:"+String(val_intensity[blue]));
     lcd.setCursor(0,1);
     lcd.print("RC:"+String(val_current[red])+"GC:"+String(val_current[green])+"BC:"+String(val_current[blue]));
-    delay(500);
+    delay(1000);
   }    
 }
 
 void servomotion(){
- for(int i = servo_position; i >=0; i--){
-     if(analogRead(LDR)>LDR_whitepatch){
+  digitalWrite(red, HIGH);
+  digitalWrite(green, HIGH);
+  digitalWrite(blue, HIGH);
+  for(int i = servo_position; i >=0; i--){
+    myservo.write(i);
+    delay(50);
+     if((analogRead(LDR) <= (LDR_whitepatch-5)) && (i < (servo_position - 8))){
        servo_position = i;
-       exit(0);
+       break;
      }
- }
+  }
+  digitalWrite(red, LOW);
+  digitalWrite(green, LOW);
+  digitalWrite(blue, LOW);
+}
+
+int find_color(){
+  int temp_thresh = 10;
+
+  analogWrite(red, val_current[red]);
+  delay(500);
+  if(analogRead(LDR) <= (val_intensity[red]-temp_thresh)) return red;
+  digitalWrite(red, LOW);
+  
+  analogWrite(green, val_current[green]);
+  delay(500);
+  if(analogRead(LDR) <= (val_intensity[green]-temp_thresh)) return green;
+  digitalWrite(green, LOW);
+  
+  analogWrite(blue, val_current[blue]);
+  delay(500);
+  if(analogRead(LDR) <= (val_intensity[blue]-temp_thresh)) return blue;
+  digitalWrite(blue, LOW);
 }
