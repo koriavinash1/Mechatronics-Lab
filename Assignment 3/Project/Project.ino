@@ -32,18 +32,27 @@ void loop(){
   if(!calib_done){
     serialEvent("calib");
     lcd_print("Calib mode?", 2000);
-    if(stringComplete){
+    while (Serial.available()) {
       Serial.println("HELLO");
-      Serial.print(calibrationString);
-      if(calibrationString == "manual"){ ManualCalibrate(); if(millis()>20000) {calibrationString = ""; stringComplete = false; calib_done = true;}}
-      else if(calibrationString == "auto") AutoCalibrate();
-      else lcd_print("Enter Proper Str", 1000); calibrationString = ""; stringComplete = false;
+      char inChar = (char)Serial.read();
+      if(inChar == "m"){ ManualCalibrate(); if(millis()>20000) {calib_done = true; break;}}
+      else if(inChar== "a"){ AutoCalibrate(); break;}
+      else {lcd_print("Enter Proper Str", 1000); break;}
     }
   }  
   else if(calib_done){
     lcd_print("Pick up color?", 2000);
-    serialEvent("task"); if (stringComplete) additionalTasks(); 
+    while (Serial.available()) { 
+      char inChar = (char)Serial.read();
+      if(inChar == "r") taskString = "red";
+      else if(inChar == "g") taskString = "green";
+      else if(inChar == "b") taskString = "blue";
+      else lcd_print("Enter Proper Str", 1000); 
+      additionalTasks(); 
+      break;
+    }
   }
+  lcd_print("Tasks Completed .....", 1000);
 }
 
 //additional functions...........
