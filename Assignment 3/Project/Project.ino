@@ -11,7 +11,7 @@ int color_ANGLE_val[] = {0,0,0,0,0,0,0,0,0,0,0,0};//Position angles
 int base_servo = 6, top_servo = 5;
 int number_color_patchs = 3;
 int calib_done = false;
-String taskString = "", calibrationString = ""; boolean stringComplete = false;
+String taskString = "";
 
 void setup(){
   Serial.begin(9600);
@@ -30,7 +30,6 @@ void setup(){
 
 void loop(){
   if(!calib_done){
-    serialEvent("calib");
     lcd_print("Calib mode?", 2000);
     while (Serial.available()) {
       Serial.println("HELLO");
@@ -64,7 +63,6 @@ void ManualCalibrate(){
     analogWrite(i, 0);
   }
 }
-
 void AutoCalibrate(){
   for(int i=blue; i<=red; i++){ initialCalibration(i); analogWrite(i, 0);}//Auto Calibrate...............
   lcd_print("calib to max.....", 2000);  
@@ -85,7 +83,6 @@ void AutoCalibrate(){
   rotate_servo(base_servo, whitepatch_pos, 3000, 100);
   calib_done = true;
 }
-
 void additionalTasks(){
   if (taskString == "red"){ rotate_servo(base_servo,color_ANGLE_val[red], 3000, 100); pickObject(); }
   else if (taskString == "green"){ rotate_servo(base_servo ,color_ANGLE_val[green], 3000, 100); pickObject(); }
@@ -94,19 +91,16 @@ void additionalTasks(){
   taskString = "";
   stringComplete = false;
 }
-
 void initialCalibration(int color){
   analogWrite(color, 255); delay(1000);
   color_LDR_val[color] = analogRead(LDR); color_PWM_val[color] = 255;
   lcd_print("R:"+String(color_LDR_val[red])+"G:"+String(color_LDR_val[green])+"B:"+String(color_LDR_val[blue]), 500);
 }
-
 int find_max(){
   if((color_LDR_val[red] > color_LDR_val[green]) && (color_LDR_val[red] > color_LDR_val[blue])) return color_LDR_val[red];
   else if((color_LDR_val[blue] > color_LDR_val[green])) return color_LDR_val[blue];
   else return color_LDR_val[green];
 }
-
 void calibrateToMax(int max_val, int color){
   int error = 10;  
   for(int i = 255; color_LDR_val[color] <= (max_val - error); i=i-3){
@@ -116,7 +110,6 @@ void calibrateToMax(int max_val, int color){
     lcd_multiline_print("IR:"+String(color_LDR_val[red])+"G:"+String(color_LDR_val[green])+"B:"+String(color_LDR_val[blue]), "CR:"+String(color_PWM_val[red])+"G:"+String(color_PWM_val[green])+"B:"+String(color_PWM_val[blue]), 100);
   }    
 }
-
 void servomotion(){
   int error = 25, angle_error = 20;
   analogWrite(red, 255); analogWrite(green, 255); analogWrite(blue, 255);
@@ -127,9 +120,7 @@ void servomotion(){
   analogWrite(red, 0); analogWrite(green, 0); analogWrite(blue, 0);
   find_color();
 }
-
 void alternativeServoCode(){ for(int i=servo_position; i>= 0; i-=8){ servo_position = i; rotate_servo(base_servo, servo_position, 500, 100); find_color();}}
-
 void find_color(){
   int error = 30;
   int t[] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -139,20 +130,17 @@ void find_color(){
     t[i] = analogRead(LDR);
     analogWrite(i, 0); delay(200);
   }
-
   if((t[red]<t[green])&&(t[red]<t[blue])){ lcd_print("Color = RED", 2000); color_ANGLE_val[red] = servo_position;}
   else if(t[green]<t[blue]){ lcd_print("Color = GREEN", 2000); color_ANGLE_val[green] = servo_position;}
   else if(t[blue]>t[green]){ lcd_print("Color = BLUE", 2000); color_ANGLE_val[blue] = servo_position;}
   else lcd_print("Color = white", 2000);
 }
-
 void pickObject(){
   for(int i=top_servo_pos; i<=160; i+=4){ 
     rotate_servo(top_servo, i, 500, 100);
     if( analogRead(Proximity) <= 100){ digitalWrite(electroMagnet, HIGH); delay(2000); rotate_servo(top_servo, top_servo_pos, 2000, 500); break;}
   }
 }
-
 void serialEvent(String type) {
   while (Serial.available()) {
     char inChar = (char)Serial.read(); // add it to the taskString:
