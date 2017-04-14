@@ -34,12 +34,17 @@ void loop(){
     while (Serial.available()) {
       Serial.println("HELLO");
       char inChar = (char)Serial.read();
-      if(inChar == "m"){ ManualCalibrate(); if(millis()>20000) {calib_done = true; break;}}
+      if(inChar == "m"){ ManualCalibrate(); if(millis()>20000) { lcd_print("finding color.....", 2000); for(int i =0; i<number_color_patchs;i++) servomotion();calib_done = true; break;}}
       else if(inChar== "a"){ AutoCalibrate(); break;}
       else {lcd_print("Enter Proper Str", 1000); break;}
     }
   }  
   else if(calib_done){
+    Serial.println("Calibrated Values................................");
+    Serial.println("LDR Red:"+String(color_LDR_val[red])+"Green:"+String(color_LDR_val[green])+"Blue:"+String(color_LDR_val[blue])); 
+    Serial.println("PWM Red:"+String(color_PWM_val[red])+"Green:"+String(color_PWM_val[green])+"Blue:"+String(color_PWM_val[blue]));
+    Serial.println("Position Angles Red:"+String(color_ANGLE_val[red])+"Green:"+String(color_ANGLE_val[green])+"Blue:"+String(color_ANGLE_val[blue]));
+    Serial.println("enter pickup color....");
     lcd_print("Pick up color?", 2000);
     while (Serial.available()) { 
       char inChar = (char)Serial.read();
@@ -58,6 +63,7 @@ void loop(){
 void ManualCalibrate(){
   for(int i=blue; i<=red; i++) { 
     analogWrite(i, 255); delay(200);
+    color_PWM_val[i] = 255;
     color_LDR_val[i] = analogRead(LDR);
     lcd_print("R:"+String(color_LDR_val[red])+"G:"+String(color_LDR_val[green])+"B:"+String(color_LDR_val[blue]), 200);
     analogWrite(i, 0);
@@ -69,16 +75,11 @@ void AutoCalibrate(){
   int maxValue = find_max();
   Serial.println(maxValue);
   for(int i=blue; i<=red; i++){ calibrateToMax(maxValue, i); analogWrite(i, 0);}
-  Serial.println("Calibrated Values................................");
-  Serial.println("LDR Red:"+String(color_LDR_val[red])+"Green:"+String(color_LDR_val[green])+"Blue:"+String(color_LDR_val[blue])); 
-  Serial.println("PWM Red:"+String(color_PWM_val[red])+"Green:"+String(color_PWM_val[green])+"Blue:"+String(color_PWM_val[blue]));
-
   lcd_print("finding color.....", 2000);
-  while(servo_position >= 40){ servomotion();} //using efficient algo.....
-  alternativeServoCode();//gen algo.....
-
+  for(int i =0; i<number_color_patchs;i++) servomotion();
+  //while(servo_position >= 50){ servomotion();} //using efficient algo.....
+  //alternativeServoCode();//gen algo.....
   lcd_print("AR:"+String(color_ANGLE_val[red])+"G:"+String(color_ANGLE_val[green])+"B:"+String(color_ANGLE_val[blue]), 3000);
-  Serial.println("Position Angles Red:"+String(color_ANGLE_val[red])+"Green:"+String(color_ANGLE_val[green])+"Blue:"+String(color_ANGLE_val[blue]));
   lcd_print("System Calibration Done...", 3000); 
   rotate_servo(base_servo, whitepatch_pos, 3000, 100);
   calib_done = true;
@@ -120,7 +121,7 @@ void servomotion(){
   analogWrite(red, 0); analogWrite(green, 0); analogWrite(blue, 0);
   find_color();
 }
-void alternativeServoCode(){ for(int i=servo_position; i>= 0; i-=8){ servo_position = i; rotate_servo(base_servo, servo_position, 500, 100); find_color();}}
+// void alternativeServoCode(){ for(int i=servo_position; i>= 0; i-=8){ servo_position = i; rotate_servo(base_servo, servo_position, 500, 100); find_color();}}
 void find_color(){
   int error = 30;
   int t[] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -141,17 +142,17 @@ void pickObject(){
     if( analogRead(Proximity) <= 100){ digitalWrite(electroMagnet, HIGH); delay(2000); rotate_servo(top_servo, top_servo_pos, 2000, 500); break;}
   }
 }
-void serialEvent(String type) {
-  while (Serial.available()) {
-    char inChar = (char)Serial.read(); // add it to the taskString:
-    if(type == "calib") calibrationString += inChar;
-    else if(type == "task")taskString += inChar;
-    if (inChar == '\n') stringComplete = true;
-    Serial.println(calibrationString);
-  }
-}
-
 // miscellaneous functions...........
 void lcd_print(String str, int delay_time){ lcd.clear(); lcd.setCursor(0,0); lcd.print(str); delay(delay_time);}
 void lcd_multiline_print(String str1, String str2, int delay_time){ lcd.clear(); lcd.setCursor(0,0); lcd.print(str1); lcd.setCursor(0,1); lcd.print(str2); delay(delay_time);}
 void rotate_servo(int pin, int angle, int delay1, int delay2){ myservo.attach(pin); myservo.write(angle); delay(delay1); myservo.detach(); delay(delay2); }
+
+// void serialEvent(String type) {
+//   while (Serial.available()) {
+//     char inChar = (char)Serial.read(); // add it to the taskString:
+//     if(type == "calib") calibrationString += inChar;
+//     else if(type == "task")taskString += inChar;
+//     if (inChar == '\n') stringComplete = true;
+//     Serial.println(calibrationString);
+//   }
+// }
