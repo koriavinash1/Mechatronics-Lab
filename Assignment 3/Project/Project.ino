@@ -109,7 +109,7 @@ void calibrateToMax(int max_val, int color){
 void servomotion(){
   int error = 25, angle_error = 20;
   analogWrite(red, 255); analogWrite(green, 255); analogWrite(blue, 255);
-  for(int i = servo_position; i >= 40; i-=5){
+  for(int i = servo_position; i >= 40; i-=8){
     rotate_servo(base_servo, i, 500, 100);
     if((analogRead(LDR) >= LDR_whitepatch + error) && (i < (servo_position - angle_error ))){ servo_position = i; break; }
   }
