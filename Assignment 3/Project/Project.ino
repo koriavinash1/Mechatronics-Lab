@@ -19,9 +19,6 @@ void setup(){
   rotate_servo(base_servo, whitepatch_pos, 2000, 500);
   rotate_servo(top_servo, top_servo_pos, 2000, 500);  
   lcd.begin(16, 2);
-  taskString.reserve(200);
-  calibrationString.reserve(200);
-
   analogWrite(red, 255); analogWrite(green, 255); analogWrite(blue, 255); delay(500);
   LDR_whitepatch = analogRead(A2);
   analogWrite(red, 0); analogWrite(green, 0); analogWrite(blue, 0);
@@ -34,8 +31,8 @@ void loop(){
     while (Serial.available()) {
       Serial.println("HELLO");
       char inChar = (char)Serial.read();
-      if(inChar == "m"){ ManualCalibrate(); if(millis()>20000) { lcd_print("finding color.....", 2000); for(int i =0; i<number_color_patchs;i++) servomotion();calib_done = true; break;}}
-      else if(inChar== "a"){ AutoCalibrate(); break;}
+      if(inChar == 'm'){ ManualCalibrate(); if(millis()>20000) { lcd_print("finding color.....", 2000); for(int i =0; i<number_color_patchs;i++) servomotion();calib_done = true; break;}}
+      else if(inChar== 'a'){ AutoCalibrate(); break;}
       else {lcd_print("Enter Proper Str", 1000); break;}
     }
   }  
@@ -48,17 +45,16 @@ void loop(){
     lcd_print("Pick up color?", 2000);
     while (Serial.available()) { 
       char inChar = (char)Serial.read();
-      if(inChar == "r") taskString = "red";
-      else if(inChar == "g") taskString = "green";
-      else if(inChar == "b") taskString = "blue";
+      if(inChar == 'r') taskString = "red";
+      else if(inChar == 'g') taskString = "green";
+      else if(inChar == 'b') taskString = "blue";
       else lcd_print("Enter Proper Str", 1000); 
       additionalTasks(); 
       break;
     }
+    lcd_print("Tasks Completed .....", 1000);
   }
-  lcd_print("Tasks Completed .....", 1000);
 }
-
 //additional functions...........
 void ManualCalibrate(){
   for(int i=blue; i<=red; i++) { 
@@ -90,7 +86,6 @@ void additionalTasks(){
   else if (taskString == "blue"){ rotate_servo(base_servo, color_ANGLE_val[blue], 3000, 100); pickObject(); }
   else rotate_servo(base_servo, whitepatch_pos, 3000, 100);
   taskString = "";
-  stringComplete = false;
 }
 void initialCalibration(int color){
   analogWrite(color, 255); delay(1000);
@@ -133,8 +128,8 @@ void find_color(){
   }
   if((t[red]<t[green])&&(t[red]<t[blue])){ lcd_print("Color = RED", 2000); color_ANGLE_val[red] = servo_position;}
   else if(t[green]<t[blue]){ lcd_print("Color = GREEN", 2000); color_ANGLE_val[green] = servo_position;}
-  else if(t[blue]>t[green]){ lcd_print("Color = BLUE", 2000); color_ANGLE_val[blue] = servo_position;}
-  else lcd_print("Color = white", 2000);
+  else if((abs(t[red]-t[blue]) < error)&&(abs(t[green]-t[red]) < error)) lcd_print("Color = white", 2000);
+  else{lcd_print("Color = BLUE", 2000); color_ANGLE_val[blue] = servo_position;}
 }
 void pickObject(){
   for(int i=top_servo_pos; i<=160; i+=4){ 
@@ -146,13 +141,3 @@ void pickObject(){
 void lcd_print(String str, int delay_time){ lcd.clear(); lcd.setCursor(0,0); lcd.print(str); delay(delay_time);}
 void lcd_multiline_print(String str1, String str2, int delay_time){ lcd.clear(); lcd.setCursor(0,0); lcd.print(str1); lcd.setCursor(0,1); lcd.print(str2); delay(delay_time);}
 void rotate_servo(int pin, int angle, int delay1, int delay2){ myservo.attach(pin); myservo.write(angle); delay(delay1); myservo.detach(); delay(delay2); }
-
-// void serialEvent(String type) {
-//   while (Serial.available()) {
-//     char inChar = (char)Serial.read(); // add it to the taskString:
-//     if(type == "calib") calibrationString += inChar;
-//     else if(type == "task")taskString += inChar;
-//     if (inChar == '\n') stringComplete = true;
-//     Serial.println(calibrationString);
-//   }
-// }
