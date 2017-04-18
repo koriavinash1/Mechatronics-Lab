@@ -2,13 +2,13 @@
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(2,3,4,8,12,13);
 Servo myservo;
-int whitepatch_pos = 150, servo_position = whitepatch_pos, top_servo_pos = 0;
+int whitepatch_pos = 150, servo_position = whitepatch_pos, top_servo_pos = 90;
 int LDR_whitepatch = 0;
 int red = 11, green = 10, blue = 9, LDR = A2, Proximity = A1, electroMagnet = 7;
 int color_LDR_val[] = {0,0,0,0,0,0,0,0,0,0,0,0};//LDR values
 int color_PWM_val[] = {0,0,0,0,0,0,0,0,0,0,0,0};//0:red, 1:green, 2:blue // PWM values...
 int color_ANGLE_val[] = {0,0,0,0,0,0,0,0,0,0,0,0};//Position angles
-int base_servo = 6, top_servo = 5;
+int base_servo = 6, top_servo = 5, pickup = 0;
 int number_color_patchs = 3;
 int calib_done = false;
 String taskString = "";
@@ -42,17 +42,31 @@ void loop(){
     Serial.println("PWM Red:"+String(color_PWM_val[red])+"Green:"+String(color_PWM_val[green])+"Blue:"+String(color_PWM_val[blue]));
     Serial.println("Position Angles Red:"+String(color_ANGLE_val[red])+"Green:"+String(color_ANGLE_val[green])+"Blue:"+String(color_ANGLE_val[blue]));
     Serial.println("enter pickup color....");
-    lcd_print("Pick up color?", 2000);
-    while (Serial.available()) { 
-      char inChar = (char)Serial.read();
-      if(inChar == 'r') taskString = "red";
-      else if(inChar == 'g') taskString = "green";
-      else if(inChar == 'b') taskString = "blue";
-      else lcd_print("Enter Proper Str", 1000); 
-      additionalTasks(); 
-      break;
+    if (pickup == 0){
+      lcd_print("Pick up color?", 2000);
+      while (Serial.available()) { 
+        char inChar = (char)Serial.read();
+        if(inChar == 'r') taskString = "red";
+        else if(inChar == 'g') taskString = "green";
+        else if(inChar == 'b') taskString = "blue";
+        else lcd_print("Enter Proper Str", 1000); 
+        additionalTasks(1); 
+        break;
+      }
     }
-    lcd_print("Tasks Completed .....", 1000);
+    else if(pickup == 1){
+      lcd_print("drop location?", 2000);
+      while (Serial.available()) { 
+        char inChar = (char)Serial.read();
+        if(inChar == 'r') taskString = "red";
+        else if(inChar == 'g') taskString = "green";
+        else if(inChar == 'b') taskString = "blue";
+        else lcd_print("Enter Proper Str", 1000); 
+        additionalTasks(0); 
+        break;
+      }
+    }
+    else lcd_print("Tasks Completed .....", 1000);
   }
 }
 //additional functions...........
@@ -80,12 +94,12 @@ void AutoCalibrate(){
   rotate_servo(base_servo, whitepatch_pos, 3000, 100);
   calib_done = true;
 }
-void additionalTasks(){
-  if (taskString == "red"){ rotate_servo(base_servo,color_ANGLE_val[red], 3000, 100); pickObject(); }
-  else if (taskString == "green"){ rotate_servo(base_servo ,color_ANGLE_val[green], 3000, 100); pickObject(); }
-  else if (taskString == "blue"){ rotate_servo(base_servo, color_ANGLE_val[blue], 3000, 100); pickObject(); }
-  else rotate_servo(base_servo, whitepatch_pos, 3000, 100);
-  taskString = "";
+void additionalTasks(int a){
+    if (taskString == "red"){ rotate_servo(base_servo,color_ANGLE_val[red], 3000, 100); pickObject(a); }
+    else if (taskString == "green"){ rotate_servo(base_servo ,color_ANGLE_val[green], 3000, 100); pickObject(a); }
+    else if (taskString == "blue"){ rotate_servo(base_servo, color_ANGLE_val[blue], 3000, 100); pickObject(a); }
+    else rotate_servo(base_servo, whitepatch_pos, 3000, 100);
+    taskString = "";
 }
 void initialCalibration(int color){
   analogWrite(color, 255); delay(1000);
@@ -131,11 +145,17 @@ void find_color(){
   else if((abs(t[red]-t[blue]) < error)&&(abs(t[green]-t[red]) < error)) lcd_print("Color = white", 2000);
   else{lcd_print("Color = BLUE", 2000); color_ANGLE_val[blue] = servo_position;}
 }
-void pickObject(){
-  for(int i=top_servo_pos; i<=160; i+=4){ 
+void pickObject(int a){
+  for(int i=top_servo_pos; i<=180; i+=10){ 
+    Serial.println("asdasdsadasd");
     rotate_servo(top_servo, i, 500, 100);
-    if( analogRead(Proximity) <= 100){ digitalWrite(electroMagnet, HIGH); delay(2000); rotate_servo(top_servo, top_servo_pos, 2000, 500); break;}
+    if( analogRead(Proximity) >= 200){
+      if(a == 1) {digitalWrite(electroMagnet, HIGH); delay(1000);}
+      else {digitalWrite(electroMagnet, LOW); delay(1000);}
+      rotate_servo(top_servo, top_servo_pos, 2000, 500); break;}
   }
+  if( a==1) pickup = 1;
+  else pickup = 2;
 }
 // miscellaneous functions...........
 void lcd_print(String str, int delay_time){ lcd.clear(); lcd.setCursor(0,0); lcd.print(str); delay(delay_time);}
